@@ -1,5 +1,6 @@
-package com.ll.basic1;
+package com.ll.basic1.boundedContext;
 
+import com.ll.basic1.boundedContext.member.service.MemberService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 // @Controller 의 의미
 // 개발자가 스프링부트에게 말한다.
@@ -22,11 +22,13 @@ import java.util.stream.Collectors;
 @Controller
 public class HomeController {
     private int count;
-    private List<Person> people;
+    private final List<Person> people;
+    private final MemberService memberService;
 
-    public HomeController() {
+    public HomeController(MemberService memberService) {
         count = -1;
         people = new ArrayList<>();
+        this.memberService = memberService;
     }
 
     // @GetMapping("/home/main") 의 의미
@@ -202,8 +204,8 @@ public class HomeController {
 
     @GetMapping("/home/addPerson")
     @ResponseBody
-    public String addPerson(String name, int age) {
-        Person p = new Person(name, age);
+    public String addPerson(String name, String password) {
+        Person p = new Person(name, password);
 
         System.out.println(p);
 
@@ -233,7 +235,7 @@ public class HomeController {
 
     @GetMapping("/home/modifyPerson")
     @ResponseBody
-    public String modifyPerson(int id, String name, int age) {
+    public String modifyPerson(int id, String name, String password) {
         Person found = people.stream()
                 .filter(person -> person.getId() == id)
                 .findFirst()
@@ -244,8 +246,7 @@ public class HomeController {
         }
 
         found.setName(name);
-        found.setAge(age);
-
+        found.setPassword(password);
         return "%d 번 사람이 수정되었습니다.".formatted(id);
     }
 
@@ -274,7 +275,7 @@ public class HomeController {
 
         resp.addCookie(new Cookie("count", newCountInCookie + ""));
 
-        return newCountInCookie;
+        return countInCookie;
     }
 }
 
@@ -325,16 +326,16 @@ class Person {
     private static int lastId;
     private final int id;
     @Setter
-    private  String name;
+    private String name;
     @Setter
-    private  int age;
+    private String password;
 
 
     static {
         lastId = 0;
     }
 
-    Person(String name, int age) {
-        this(++lastId, name, age);
+    Person(String name, String password) {
+        this(++lastId, name, password);
     }
 }
