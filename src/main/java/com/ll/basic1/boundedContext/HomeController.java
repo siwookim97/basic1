@@ -1,5 +1,6 @@
-package com.ll.basic1.boundedContext;
+package com.ll.basic1.boundedContext.home.controller;
 
+import com.ll.basic1.boundedContext.member.entity.Member;
 import com.ll.basic1.boundedContext.member.service.MemberService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ import java.util.*;
 public class HomeController {
     private int count;
     private final List<Person> people;
+    // 필드 주입
     private final MemberService memberService;
 
     public HomeController(MemberService memberService) {
@@ -204,8 +206,8 @@ public class HomeController {
 
     @GetMapping("/home/addPerson")
     @ResponseBody
-    public String addPerson(String name, String password) {
-        Person p = new Person(name, password);
+    public String addPerson(String name, int age) {
+        Person p = new Person(name, age);
 
         System.out.println(p);
 
@@ -216,38 +218,43 @@ public class HomeController {
 
     @GetMapping("/home/people")
     @ResponseBody
-    public List<Person> showPerson() {
+    public List<Person> showPeople() {
         return people;
     }
 
     @GetMapping("/home/removePerson")
     @ResponseBody
-    public String deletePerson(int id) {
+    public String removePerson(int id) {
+        // person -> person.getId() == id
+        // 위 함수가 참인 엘리먼트(요소) 경우가 존재하면, 해당 요소를 삭제한다.
+        // removed 에는 삭제수행여부가 저장된다.
+        // 조건에 맞는걸 찾았고 삭제까지 되었다면 true, 아니면 false
+        boolean removed = people.removeIf(person -> person.getId() == id);
 
-        for (Person person : people) {
-            if (person.getId() == id) {
-                people.remove(person);
-            }
+        if (removed == false) {
+            return "%d번 사람이 존재하지 않습니다.".formatted(id);
         }
 
-        return id + "번 사람이 삭제가 완료되었습니다.";
+        return "%d번 사람이 삭제되었습니다.".formatted(id);
     }
 
     @GetMapping("/home/modifyPerson")
     @ResponseBody
-    public String modifyPerson(int id, String name, String password) {
-        Person found = people.stream()
-                .filter(person -> person.getId() == id)
+    public String modifyPerson(int id, String name, int age) {
+        Person found = people
+                .stream()
+                .filter(p -> p.getId() == id)
                 .findFirst()
                 .orElse(null);
 
         if (found == null) {
-            return "%d 번 사람이 존재하지 않습니다.".formatted(id);
+            return "%d번 사람이 존재하지 않습니다.".formatted(id);
         }
 
         found.setName(name);
-        found.setPassword(password);
-        return "%d 번 사람이 수정되었습니다.".formatted(id);
+        found.setAge(age);
+
+        return "%d번 사람이 수정되었습니다.".formatted(id);
     }
 
     @GetMapping("/home/reqAndResp")
@@ -262,10 +269,11 @@ public class HomeController {
     public int showCookieIncrease(HttpServletRequest req, HttpServletResponse resp) throws IOException { // 리턴되는 int 값은 String 화 되어서 고객(브라우저)에게 전달된다.
         int countInCookie = 0;
 
+        // 고객이 가져온 쿠폰에서 count 쿠폰을 찾고 그 쿠폰의 값을 가져온다.
         if (req.getCookies() != null) {
             countInCookie = Arrays.stream(req.getCookies())
                     .filter(cookie -> cookie.getName().equals("count"))
-                    .map(cookie -> cookie.getValue())
+                    .map(Cookie::getValue)
                     .mapToInt(Integer::parseInt)
                     .findFirst()
                     .orElse(0);
@@ -273,9 +281,19 @@ public class HomeController {
 
         int newCountInCookie = countInCookie + 1;
 
+        // 고객이 가져온 count 쿠폰값에 1을 더한 쿠폰을 만들어서 고객에게 보낸다.
+        // 쉽게 말하면 브라우저(고객)에 저장되어 있는 count 쿠폰의 값을 1 증가시킨다.
+        // 이렇게 브라우저의 쿠키값을 변경하면 재방문시에 스프링부트가 다시 그 값을 받게 되어 있다.
         resp.addCookie(new Cookie("count", newCountInCookie + ""));
 
-        return countInCookie;
+        // 응답 본문
+        return newCountInCookie;
+    }
+
+    @GetMapping("/home/user1")
+    @ResponseBody
+    public Member showUser1() {
+        return memberService.findByUsername("user1");
     }
 }
 
@@ -328,14 +346,14 @@ class Person {
     @Setter
     private String name;
     @Setter
-    private String password;
+    private int age;
 
 
     static {
         lastId = 0;
     }
 
-    Person(String name, String password) {
-        this(++lastId, name, password);
+    Person(String name, int age) {
+        this(++lastId, name, age);
     }
 }

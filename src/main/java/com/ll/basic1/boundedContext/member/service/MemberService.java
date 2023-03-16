@@ -6,7 +6,6 @@ import com.ll.basic1.boundedContext.member.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-// IOC 에 의해 관리
 @Service
 @AllArgsConstructor
 public class MemberService {
@@ -23,6 +22,14 @@ public class MemberService {
             return RsData.of("F-1", "비밀번호가 일치하지 않습니다.");
         }
 
-        return RsData.of("S-1", "%s 님 환영합니다.".formatted(username));
+        return RsData.of("S-1", "%s 님 환영합니다.".formatted(username), member);
+    }
+
+    public Member findByUsername(String username) {
+        return memberRepository.findByUsername(username);
+    }
+
+    public Member findById(long id) {
+        return memberRepository.findById(id);
     }
 }
